@@ -239,6 +239,11 @@ namespace DroneController
             }
         }
 
+        public void SetTargetVelocity(Vector3 velocity)
+        {
+            TargetVelocity = velocity;
+        }
+
         /// <summary>
         /// Logs out messages to ROS topic for further post processing
         /// </summary>
