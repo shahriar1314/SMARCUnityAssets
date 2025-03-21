@@ -297,6 +297,7 @@ namespace DroneController
             // Set the target velocity and acceleration if in velocity control mode
             if (controllerState is DroneControllerState.VelocityControl)
             {
+                Debug.Log("ENTERED VELCOITY CONTROL MODE");
                 targetVelocity = TargetVelocity.To<ENU>().ToDense();
                 targetAccel = DenseVector.OfArray(new double[] { 0, 0, 0 });
                 errorTrackingPosition = DenseVector.OfArray(new double[] { 0, 0, 0 });
