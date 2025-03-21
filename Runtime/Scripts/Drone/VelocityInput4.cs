@@ -15,7 +15,7 @@ using VehicleComponents.Actuators;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using DefaultNamespace.LookUpTable;
 
-public class VelocityInput2 : MonoBehaviour
+public class VelocityInput4 : MonoBehaviour
 {
     [Header("Basics")] 
     [Tooltip("Baselink of drone")]
@@ -101,39 +101,6 @@ public class VelocityInput2 : MonoBehaviour
                         ResetFlag=0;
                     }
                     break;
-
-                // case 1: // Move forward
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
-                //     Debug.Log("go left");
-                //     if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
-                //     {
-                //         step++; 
-                //         ResetFlag++;
-                //         Debug.Log("0,0,1");
-                //     }
-                //     break;
-
-                // case 2: // Move left
-                //     droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
-                //     if (currentPosition[0] <= initialPositionSAM[0] - halfSide)
-                //     {
-                //         step=0; 
-                //         ResetFlag=0;
-                //         Debug.Log("-1,0,0");
-                //     }
-                //     break;
-
-                // default: 
-                //     break;
-
-                // case 3: // Move back
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
-                //     if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
-                //     {
-                //         step = 0; 
-                //         Debug.Log("0,0,-1");
-                //     }
-                //     break;
             }
         }
 

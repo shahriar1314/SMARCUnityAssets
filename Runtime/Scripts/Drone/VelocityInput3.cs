@@ -55,19 +55,19 @@ public class VelocityInput3 : MonoBehaviour
         {
             case 0: // Move right
                 droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
+                Debug.Log("GOING RIGHT");
                 if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
                 {
                     step++; 
-                    Debug.Log("1,0,0");
                 }
                 break;
 
             case 1: // Move forward
                 droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
+                Debug.Log("GOING UP");
                 if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
                 {
                     step++; 
-                    Debug.Log("0,0,1");
                 }
                 break;
 
@@ -76,19 +76,19 @@ public class VelocityInput3 : MonoBehaviour
 
             case 2: // Move left
                 droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
+                Debug.Log("GOING LEFT");
                 if (currentPosition[0] <= initialPositionSAM[0] - halfSide)
                 {
                     step++; 
-                    Debug.Log("-1,0,0");
                 }
                 break;
 
             case 3: // Move back
                 droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
+                Debug.Log("GOING DOWN");
                 if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
                 {
                     step = 0; 
-                    Debug.Log("0,0,-1");
                 }
                 break;
         }
