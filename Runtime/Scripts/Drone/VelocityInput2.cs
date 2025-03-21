@@ -47,7 +47,7 @@ public class VelocityInput2 : MonoBehaviour
             ABparts = Target.gameObject.GetComponentsInChildren<ArticulationBody>();
         }
 
-        ResetFlag = 0; 
+        //ResetFlag = 0; 
     }
 
     void Update()
@@ -66,7 +66,6 @@ public class VelocityInput2 : MonoBehaviour
         {
             Debug.Log($"If Loop WHEN ****Reset Flag = {ResetFlag}");
             ResetPosition();
-            ResetFlag++;
 
             switch(immovableStage)
             {
@@ -74,12 +73,14 @@ public class VelocityInput2 : MonoBehaviour
                     immovableStage = 1;
                     break;
                 case 1:
-                    if(Target.TryGetComponent(out ArticulationBody targetAb))
-                    {
-                        if(!targetAb.isRoot) return;
-                        targetAb.immovable = false;
-                    }
+                    Debug.Log("ENTERED SWITCH CASE 1");
+                    // if(Target.TryGetComponent(out ArticulationBody targetAb))
+                    // {
+                    //     if(!targetAb.isRoot) return;
+                    //     targetAb.immovable = false;
+                    // }
                     immovableStage = 2;
+                    ResetFlag++;
                     break;
                 default:
                     break;
@@ -158,7 +159,7 @@ public class VelocityInput2 : MonoBehaviour
         if (Target.TryGetComponent(out ArticulationBody targetAb))
             {
                 if (!targetAb.isRoot) return;
-                targetAb.immovable = true;
+                //targetAb.immovable = true;
                 immovableStage = 0;
                 targetAb.TeleportRoot(NewPosition, NewOrientation);
                 targetAb.linearVelocity = Vector3.zero;

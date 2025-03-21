@@ -24,7 +24,7 @@ public class VelocityInput4 : MonoBehaviour
     public Transform Target;
     ArticulationBody[] ABparts;
 
-    int immovableStage = 2;
+    int immovableStage = 0;
 
     public DroneController.DroneController droneController;
 
@@ -32,8 +32,6 @@ public class VelocityInput4 : MonoBehaviour
     private Vector<double> initialPositionSAM;
     private Vector<double> currentPosition;
     private int ResetFlag = 0; // ResetFlag to track reset agent phase
-    private int step = 0; // Step to track movement phase
-    public double sideLength = 6.0; // Length of each side of the square
     public double speed = 1.0; // Speed of movement
 
     void Start()
@@ -47,7 +45,7 @@ public class VelocityInput4 : MonoBehaviour
             ABparts = Target.gameObject.GetComponentsInChildren<ArticulationBody>();
         }
 
-        ResetFlag = 0; 
+        ResetFlag = 1; 
     }
 
     void Update()
@@ -55,18 +53,16 @@ public class VelocityInput4 : MonoBehaviour
         if (droneController == null) return;
 
         // Track current position and convert it to ENU
-        currentPosition = droneController.BaseLink.transform.position.To<ENU>().ToDense();
-
-        //Debug.Log($"Initial Position SAM (Center): x = {initialPositionSAM[0]}, y = {initialPositionSAM[1]}, z = {initialPositionSAM[2]}");
+        currentPosition = BaseLink.transform.position.To<ENU>().ToDense();
         Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
-
-        double halfSide = sideLength / 2.0;
 
         if (ResetFlag == 0)
         {
-            Debug.Log($"If Loop WHEN ****Reset Flag = {ResetFlag}");
+            
+            
             ResetPosition();
-            ResetFlag++;
+            Debug.Log("NEED TO SET NEW POSITION");
+
 
             switch(immovableStage)
             {
@@ -80,43 +76,39 @@ public class VelocityInput4 : MonoBehaviour
                         targetAb.immovable = false;
                     }
                     immovableStage = 2;
+                    ResetFlag = 1;
                     break;
                 default:
+                    ResetFlag = 1;
                     break;
             }
 
+        }
+
+        else if (currentPosition[0] >= (initialPositionSAM[0] + 2.0) && ResetFlag!=0)
+        {
+            Debug.Log("CHANGING RESET FLAG");
+            ResetFlag = 0; 
         }
 
         else
-        {   
-            Debug.Log($"ELSE Loop WHEN ****Reset Flag = {ResetFlag}");
-            switch (step)
-            {
-                case 0: // Move right
-                    droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
-                    Debug.Log("GOING RIGHT");
-                    if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
-                    {
-                        //step++; 
-                        ResetFlag=0;
-                    }
-                    break;
-            }
+        {
+            droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
+            Debug.Log("VELOCITY IS SET");
+            ResetFlag = 1;
         }
-
         
     }
 
     void ResetPosition()
     {   
-
-        float halfSide = (float) (sideLength / 2.0);
+        
         // Use the initial position from BaseLink and convert it properly
         var NewPosition = ENU.ConvertToRUF(
             new Vector3(
-                (float)initialPositionSAM[0]-halfSide,  // Assuming initialPosition is a vector-like structure
-                (float)initialPositionSAM[1],
-                (float)initialPosition[2]+2f //keeping the height same as the initial position of the drone 
+                (float)initialPosition[0],  // Assuming initialPosition is a vector-like structure
+                (float)initialPosition[1],
+                (float)initialPosition[2] //keeping the height same as the initial position of the drone 
             ));
          // Use a default orientation (identity quaternion)
         var NewOrientation = Quaternion.identity;
@@ -125,12 +117,13 @@ public class VelocityInput4 : MonoBehaviour
         if (Target.TryGetComponent(out ArticulationBody targetAb))
             {
                 if (!targetAb.isRoot) return;
-                targetAb.immovable = true;
+                //targetAb.immovable = true;
                 immovableStage = 0;
                 targetAb.TeleportRoot(NewPosition, NewOrientation);
                 targetAb.linearVelocity = Vector3.zero;
                 targetAb.angularVelocity = Vector3.zero;
                 Debug.Log("NEW POSITION IS SET");
+                // ResetFlag = 1;
             }
             else
             {
