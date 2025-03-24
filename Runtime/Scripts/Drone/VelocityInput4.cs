@@ -24,15 +24,15 @@ public class VelocityInput4 : MonoBehaviour
     public Transform Target;
     ArticulationBody[] ABparts;
 
-    int immovableStage = 0;
+    int immovableStage = 2;
 
     public DroneController.DroneController droneController;
 
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
     private Vector<double> currentPosition;
-    private int ResetFlag = 0; // ResetFlag to track reset agent phase
-    public double speed = 1.0; // Speed of movement
+    private int ResetFlag = 1; // to track reset agent phase, 0=Reset, 1=No need to reset
+    public double speed = 0.5; // Speed of movement
 
     void Start()
     {
@@ -54,14 +54,20 @@ public class VelocityInput4 : MonoBehaviour
 
         // Track current position and convert it to ENU
         currentPosition = BaseLink.transform.position.To<ENU>().ToDense();
+        
         Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
+        Debug.Log($"Initial Position: x = {initialPosition[0]}, y = {initialPosition[1]}, z = {initialPosition[2]}");
+
 
         if (ResetFlag == 0)
         {
             
+            if(ResetFlag == 0 && immovableStage >=2)
+            {
+                ResetPosition();
+                Debug.Log("NEED TO SET NEW POSITION");
+            }
             
-            ResetPosition();
-            Debug.Log("NEED TO SET NEW POSITION");
 
 
             switch(immovableStage)
@@ -83,12 +89,16 @@ public class VelocityInput4 : MonoBehaviour
                     break;
             }
 
+            Debug.Log("IMMOVABLE STAGE WORKED");
+
+
         }
 
-        else if (currentPosition[0] >= (initialPositionSAM[0] + 2.0) && ResetFlag!=0)
+        else if (currentPosition[0] >= (initialPositionSAM[0] + 5.0) && ResetFlag!=0)
         {
             Debug.Log("CHANGING RESET FLAG");
-            ResetFlag = 0; 
+            ResetFlag = 0;
+            immovableStage = 2; 
         }
 
         else
@@ -106,9 +116,9 @@ public class VelocityInput4 : MonoBehaviour
         // Use the initial position from BaseLink and convert it properly
         var NewPosition = ENU.ConvertToRUF(
             new Vector3(
-                (float)initialPosition[0],  // Assuming initialPosition is a vector-like structure
-                (float)initialPosition[1],
-                (float)initialPosition[2] //keeping the height same as the initial position of the drone 
+                (float)initialPosition[0],  
+                (float)initialPosition[1]+2f,
+                (float)initialPosition[2] //keeping the position same as the initial position of the drone 
             ));
          // Use a default orientation (identity quaternion)
         var NewOrientation = Quaternion.identity;
