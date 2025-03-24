@@ -22,7 +22,10 @@ public class VelocityInput4 : MonoBehaviour
     public GameObject BaseLink;
     public GameObject BaseLinkSAM;
     public Transform Target;
+
+    public Transform DroneActuator;
     ArticulationBody[] ABparts;
+    Rigidbody[] RBparts;
 
     int immovableStage = 2;
 
@@ -30,6 +33,9 @@ public class VelocityInput4 : MonoBehaviour
 
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
+
+    private Vector3[] initialPositionWinch;
+    private Quaternion[] initialRotationWinch;
     private Vector<double> currentPosition;
     private int ResetFlag = 1; // to track reset agent phase, 0=Reset, 1=No need to reset
     public double speed = 0.5; // Speed of movement
@@ -43,6 +49,35 @@ public class VelocityInput4 : MonoBehaviour
             initialPositionSAM = BaseLinkSAM.transform.position.To<ENU>().ToDense();
 
             ABparts = Target.gameObject.GetComponentsInChildren<ArticulationBody>();
+            RBparts = DroneActuator.gameObject.GetComponentsInChildren<Rigidbody>();
+            
+
+            // Store initial positions and rotations
+            initialPositionWinch = new Vector3[RBparts.Length];
+            initialRotationWinch = new Quaternion[RBparts.Length];
+
+            for (int i = 0; i < RBparts.Length; i++)
+            {
+                initialPositionWinch[i] = RBparts[i].position;
+                initialRotationWinch[i] = RBparts[i].rotation;
+            }
+
+
+            // Check if any Rigidbody is assigned
+            // if (RBparts.Length > 0)
+            // {
+            //     Debug.Log("There are " + RBparts.Length + " Rigidbody(s) assigned to the Target.");
+
+            //     // Log the names of all Rigidbody components
+            //     foreach (Rigidbody rb in RBparts)
+            //     {
+            //         Debug.Log("Rigidbody found: " + rb.name);
+            //     }
+            // }
+            // else
+            // {
+            //     Debug.Log("No Rigidbody components found.");
+            // }
         }
 
         ResetFlag = 1; 
@@ -55,8 +90,8 @@ public class VelocityInput4 : MonoBehaviour
         // Track current position and convert it to ENU
         currentPosition = BaseLink.transform.position.To<ENU>().ToDense();
         
-        Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
-        Debug.Log($"Initial Position: x = {initialPosition[0]}, y = {initialPosition[1]}, z = {initialPosition[2]}");
+        // Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
+        // Debug.Log($"Initial Position: x = {initialPosition[0]}, y = {initialPosition[1]}, z = {initialPosition[2]}");
 
 
         if (ResetFlag == 0)
@@ -65,7 +100,7 @@ public class VelocityInput4 : MonoBehaviour
             if(ResetFlag == 0 && immovableStage >=2)
             {
                 ResetPosition();
-                Debug.Log("NEED TO SET NEW POSITION");
+                ResetRigidBody();
             }
             
 
@@ -104,7 +139,7 @@ public class VelocityInput4 : MonoBehaviour
         else
         {
             droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
-            Debug.Log("VELOCITY IS SET");
+            // Debug.Log("VELOCITY IS SET");
             ResetFlag = 1;
         }
         
@@ -117,8 +152,8 @@ public class VelocityInput4 : MonoBehaviour
         var NewPosition = ENU.ConvertToRUF(
             new Vector3(
                 (float)initialPosition[0],  
-                (float)initialPosition[1]+2f,
-                (float)initialPosition[2] //keeping the position same as the initial position of the drone 
+                (float)initialPosition[1],
+                (float)initialPosition[2]+2f //keeping the position same as the initial position of the drone 
             ));
          // Use a default orientation (identity quaternion)
         var NewOrientation = Quaternion.identity;
@@ -147,6 +182,31 @@ public class VelocityInput4 : MonoBehaviour
                 ab.angularVelocity = Vector3.zero;
                 ab.ResetArticulationBody();
             }
+
+            // ResetRigidBody();
+
+    }
+
+    void ResetRigidBody()
+    {
+        for (int i = 0; i < RBparts.Length; i++)
+        {   
+            // Log current velocity before reset
+            Debug.Log($"Before Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
+
+            // Reset position and rotation to initial values
+            RBparts[i].position = initialPositionWinch[i];
+            RBparts[i].rotation = initialRotationWinch[i];
+
+            // Reset velocity to stop movement
+            RBparts[i].linearVelocity = Vector3.zero;
+            RBparts[i].angularVelocity = Vector3.zero;
+
+            // Log velocity after reset
+            Debug.Log($"After Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
+
+        }
+        Debug.Log("RIGID BODIES RESET TO INITIAL POSITION WINCH & VELOCITIES!");
 
     }
 }
