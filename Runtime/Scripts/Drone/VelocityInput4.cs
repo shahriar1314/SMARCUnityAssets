@@ -34,11 +34,10 @@ public class VelocityInput4 : MonoBehaviour
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
 
-    private Vector3[] initialPositionWinch;
-    private Quaternion[] initialRotationWinch;
+    public Vector<double> CurrentVelocityDrone; 
+
     private Vector<double> currentPosition;
     private int ResetFlag = 1; // to track reset agent phase, 0=Reset, 1=No need to reset
-    private int MakePause = 0; // to pause the sim, 1=puase, 0=do not pause 
     public double speed = 0.5; // Speed of movement
 
     void Start()
@@ -51,34 +50,6 @@ public class VelocityInput4 : MonoBehaviour
 
             ABparts = Target.gameObject.GetComponentsInChildren<ArticulationBody>();
             RBparts = DroneActuator.gameObject.GetComponentsInChildren<Rigidbody>();
-            
-
-            // Store initial positions and rotations
-            initialPositionWinch = new Vector3[RBparts.Length];
-            initialRotationWinch = new Quaternion[RBparts.Length];
-
-            for (int i = 0; i < RBparts.Length; i++)
-            {
-                initialPositionWinch[i] = RBparts[i].position;
-                initialRotationWinch[i] = RBparts[i].rotation;
-            }
-
-
-            // Check if any Rigidbody is assigned
-            // if (RBparts.Length > 0)
-            // {
-            //     Debug.Log("There are " + RBparts.Length + " Rigidbody(s) assigned to the Target.");
-
-            //     // Log the names of all Rigidbody components
-            //     foreach (Rigidbody rb in RBparts)
-            //     {
-            //         Debug.Log("Rigidbody found: " + rb.name);
-            //     }
-            // }
-            // else
-            // {
-            //     Debug.Log("No Rigidbody components found.");
-            // }
         }
 
         ResetFlag = 1; 
@@ -101,7 +72,6 @@ public class VelocityInput4 : MonoBehaviour
             if(ResetFlag == 0 && immovableStage >=2)
             {
                 ResetPosition();
-                ResetRigidBody();
             }
             
 
@@ -130,7 +100,7 @@ public class VelocityInput4 : MonoBehaviour
 
         }
 
-        else if (currentPosition[0] >= (initialPositionSAM[0] + 5.0) && ResetFlag!=0)
+        else if (currentPosition[0] >= (initialPositionSAM[0] + 10.0) && ResetFlag!=0)
         {
             Debug.Log("CHANGING RESET FLAG");
             ResetFlag = 0;
@@ -154,7 +124,7 @@ public class VelocityInput4 : MonoBehaviour
             new Vector3(
                 (float)initialPositionSAM[0],  
                 (float)initialPositionSAM[1],
-                (float)initialPosition[2]+5f //keeping the position same as the initial position of the drone 
+                (float)initialPositionSAM[2]+3f//keeping the position same as the initial position of the drone 
             ));
          // Use a default orientation (identity quaternion)
         var NewOrientation = Quaternion.identity;
@@ -163,13 +133,13 @@ public class VelocityInput4 : MonoBehaviour
         if (Target.TryGetComponent(out ArticulationBody targetAb))
             {
                 if (!targetAb.isRoot) return;
-                //targetAb.immovable = true;
+                targetAb.immovable = true;
                 immovableStage = 0;
                 targetAb.TeleportRoot(NewPosition, NewOrientation);
                 targetAb.linearVelocity = Vector3.zero;
                 targetAb.angularVelocity = Vector3.zero;
-                Debug.Log("NEW POSITION IS SET");
-                // ResetFlag = 1;
+                targetAb.linearDamping = 0f;
+                Debug.Log("NEW POSITION IS SET+++++++++++++++++++++++++++");
             }
             else
             {
@@ -184,62 +154,17 @@ public class VelocityInput4 : MonoBehaviour
                 ab.ResetArticulationBody();
             }
 
-            // ResetRigidBody();
+
+            for (int i = 0; i < RBparts.Length; i++)
+            {   
+                // Reset position and rotation to initial values
+                RBparts[i].transform.position = NewPosition; // initialPositionWinch[i];
+                RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
+
+                // Reset velocity to stop movement
+                RBparts[i].linearVelocity = Vector3.zero;
+                RBparts[i].angularVelocity = Vector3.zero;
+            }            
 
     }
-
-    void ResetRigidBody()
-    {
-        for (int i = 0; i < RBparts.Length; i++)
-        {   
-            // Log current velocity before reset
-            // Debug.Log($"Before Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
-            
-
-            var NewPosition = ENU.ConvertToRUF(
-            new Vector3(
-                (float)initialPositionSAM[0],  
-                (float)initialPositionSAM[1],
-                (float)initialPosition[2]+5f //keeping the position same as the initial position of the drone 
-            ));
-
-
-            // Reset position and rotation to initial values
-            RBparts[i].position = NewPosition; // initialPositionWinch[i];
-            RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
-
-            // Reset velocity to stop movement
-            RBparts[i].linearVelocity = Vector3.zero;
-            RBparts[i].angularVelocity = Vector3.zero;
-
-            // Log velocity after reset
-            // Debug.Log($"After Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
-
-        }
-        Debug.Log("RIGID BODIES RESET TO INITIAL POSITION WINCH & VELOCITIES!");
-
-    }
-
-
-
-
-    // TRYING TO PAUSE THE GAME 
-
-    // IEnumerator IdleForSeconds(float seconds)
-    // {
-    //     Debug.Log("Pausing................");
-    //     yield return new WaitForSeconds(seconds);
-    //     Debug.Log("Resuming after idle time.");
-    // }
-
-    // void PauseSimulation()
-    // {
-    //     Time.timeScale = 0f;
-    //     Invoke("ResumeSimulation............", 3f);
-    // }
-
-    // void ResumeSimulation()
-    // {
-    //     Time.timeScale = 1f;
-    // }
 }

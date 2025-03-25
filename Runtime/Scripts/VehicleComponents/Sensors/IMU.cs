@@ -51,6 +51,7 @@ namespace VehicleComponents.Sensors
 
             lastVelocity = localVelocity;
 
+            // Debug.Log("[IMU] DRONE VELOCITY : " + lastVelocity);
             if (withGravity)
             {
                 // Find the global gravity in the local frame and add to the computed linear acceleration
