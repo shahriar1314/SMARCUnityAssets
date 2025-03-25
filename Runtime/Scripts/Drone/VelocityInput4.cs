@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
@@ -38,6 +38,7 @@ public class VelocityInput4 : MonoBehaviour
     private Quaternion[] initialRotationWinch;
     private Vector<double> currentPosition;
     private int ResetFlag = 1; // to track reset agent phase, 0=Reset, 1=No need to reset
+    private int MakePause = 0; // to pause the sim, 1=puase, 0=do not pause 
     public double speed = 0.5; // Speed of movement
 
     void Start()
@@ -83,14 +84,14 @@ public class VelocityInput4 : MonoBehaviour
         ResetFlag = 1; 
     }
 
-    void Update()
+    void FixedUpdate()
     {
         if (droneController == null) return;
 
         // Track current position and convert it to ENU
         currentPosition = BaseLink.transform.position.To<ENU>().ToDense();
         
-        // Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
+        Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
         // Debug.Log($"Initial Position: x = {initialPosition[0]}, y = {initialPosition[1]}, z = {initialPosition[2]}");
 
 
@@ -151,9 +152,9 @@ public class VelocityInput4 : MonoBehaviour
         // Use the initial position from BaseLink and convert it properly
         var NewPosition = ENU.ConvertToRUF(
             new Vector3(
-                (float)initialPosition[0],  
-                (float)initialPosition[1],
-                (float)initialPosition[2]+2f //keeping the position same as the initial position of the drone 
+                (float)initialPositionSAM[0],  
+                (float)initialPositionSAM[1],
+                (float)initialPosition[2]+5f //keeping the position same as the initial position of the drone 
             ));
          // Use a default orientation (identity quaternion)
         var NewOrientation = Quaternion.identity;
@@ -192,21 +193,53 @@ public class VelocityInput4 : MonoBehaviour
         for (int i = 0; i < RBparts.Length; i++)
         {   
             // Log current velocity before reset
-            Debug.Log($"Before Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
+            // Debug.Log($"Before Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
+            
+
+            var NewPosition = ENU.ConvertToRUF(
+            new Vector3(
+                (float)initialPositionSAM[0],  
+                (float)initialPositionSAM[1],
+                (float)initialPosition[2]+5f //keeping the position same as the initial position of the drone 
+            ));
+
 
             // Reset position and rotation to initial values
-            RBparts[i].position = initialPositionWinch[i];
-            RBparts[i].rotation = initialRotationWinch[i];
+            RBparts[i].position = NewPosition; // initialPositionWinch[i];
+            RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
 
             // Reset velocity to stop movement
             RBparts[i].linearVelocity = Vector3.zero;
             RBparts[i].angularVelocity = Vector3.zero;
 
             // Log velocity after reset
-            Debug.Log($"After Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
+            // Debug.Log($"After Reset - Rigidbody {RBparts[i].name}: Velocity = {RBparts[i].linearVelocity}, Angular Velocity = {RBparts[i].angularVelocity}");
 
         }
         Debug.Log("RIGID BODIES RESET TO INITIAL POSITION WINCH & VELOCITIES!");
 
     }
+
+
+
+
+    // TRYING TO PAUSE THE GAME 
+
+    // IEnumerator IdleForSeconds(float seconds)
+    // {
+    //     Debug.Log("Pausing................");
+    //     yield return new WaitForSeconds(seconds);
+    //     Debug.Log("Resuming after idle time.");
+    // }
+
+    // void PauseSimulation()
+    // {
+    //     Time.timeScale = 0f;
+    //     Invoke("ResumeSimulation............", 3f);
+    // }
+
+    // void ResumeSimulation()
+    // {
+    //     Time.timeScale = 1f;
+    // }
 }
