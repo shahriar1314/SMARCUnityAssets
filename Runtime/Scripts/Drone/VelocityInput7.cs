@@ -4,6 +4,9 @@ using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 
+using DefaultNamespace; // ResetArticulationBody() extension
+
+
 // Directives for publishing messages
 using Unity.Robotics.Core; // Clock
 using Unity.Robotics.ROSTCPConnector;
@@ -11,26 +14,26 @@ using StdMessages = RosMessageTypes.Std;
 using VehicleComponents.Actuators;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using DefaultNamespace.LookUpTable;
+using GluonGui.WorkspaceWindow.Views.WorkspaceExplorer.Explorer.Operations;
 
-public class VelocityInput6 : MonoBehaviour
+public class VelocityInput7 : MonoBehaviour
 {
     [Header("Basics")] 
     [Tooltip("Baselink of drone")]
     public GameObject BaseLink;
     public GameObject BaseLinkSAM;
 
+    public Transform Drone; 
+
     public DroneController.DroneController droneController;
 
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
     private Vector<double> currentPosition;
+    private int reset_in_progress=1;
     private int step = 0; // Step to track movement phase
     public double sideLength = 3.0; // Length of each side of the square
     public double speed = 1.0; // Speed of movement
-
-    [Header("Respawn Settings")]
-    public GameObject quadrotorPrefab; // Assign in Unity Inspector
-    private GameObject currentQuadrotor;
 
     void Start()
     {
@@ -39,9 +42,6 @@ public class VelocityInput6 : MonoBehaviour
             // Convert the initial position to ENU and store it
             initialPosition = BaseLink.transform.position.To<ENU>().ToDense();
             initialPositionSAM = BaseLinkSAM.transform.position.To<ENU>().ToDense();
-
-            // Set initial drone reference
-            currentQuadrotor = droneController.gameObject;
         }
     }
 
@@ -51,6 +51,14 @@ public class VelocityInput6 : MonoBehaviour
 
         // Track current position and convert it to ENU
         currentPosition = droneController.BaseLink.transform.position.To<ENU>().ToDense();
+
+        // Use the initial position from BaseLink and convert it properly
+        var NewPosition = ENU.ConvertToRUF(
+            new Vector3(
+                (float)initialPositionSAM[0],  
+                (float)initialPositionSAM[1],
+                (float)initialPositionSAM[2]+5f//keeping the position same as the initial position of the drone 
+            ));
 
         Debug.Log($"Initial Position SAM (Center): x = {initialPositionSAM[0]}, y = {initialPositionSAM[1]}, z = {initialPositionSAM[2]}");
         Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
@@ -73,8 +81,18 @@ public class VelocityInput6 : MonoBehaviour
                 Debug.Log("GOING UP");
                 if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
                 {
-                    step++; 
+                    step=0;
+                    if (reset_in_progress!=0)
+                    {
+                        RelocateArticulationBody(Drone.GetComponent<ArticulationBody>(), NewPosition, Quaternion.identity) ;
+                        reset_in_progress+=1;
+                        reset_in_progress = reset_in_progress%3; 
+                    }
+                    
                 }
+                break;
+
+            default:
                 break;
 
             case 2: // Move left
@@ -82,13 +100,7 @@ public class VelocityInput6 : MonoBehaviour
                 Debug.Log("GOING LEFT");
                 if (currentPosition[0] <= initialPositionSAM[0] - halfSide)
                 {
-                    //step++;
-
-                    // Respawn the Quadrotor after finishing Case 2
-                    RespawnQuadrotor();
-                    Debug.Log("RESPAWNED, SHOUDL START THE LOOOP");
-
-                    step = 0; 
+                    step++; 
                 }
                 break;
 
@@ -101,29 +113,40 @@ public class VelocityInput6 : MonoBehaviour
                 }
                 break;
         }
+        
     }
 
-    void RespawnQuadrotor()
+
+    private void RelocateArticulationBody(ArticulationBody articulationBody, Vector3 position, Quaternion rotation)
     {
-        if (currentQuadrotor != null)
+        articulationBody.immovable = true;
+
+        articulationBody.TeleportRoot(position, rotation);
+        
+        articulationBody.linearVelocity = Vector3.zero;
+        articulationBody.angularVelocity = Vector3.zero;
+
+        foreach (ArticulationBody child in articulationBody.GetComponentsInChildren<ArticulationBody>())
         {
-            Destroy(currentQuadrotor); // Destroy current drone
+            ArticulationReducedSpace zeroPos = new ArticulationReducedSpace(child.dofCount);
+            child.jointPosition = zeroPos;
+
+            ArticulationReducedSpace zeroVel = new ArticulationReducedSpace(child.dofCount);
+            child.jointVelocity = zeroVel;
+            // child.jointAcceleration = zeroVel;
+            child.jointForce = zeroVel;
+
+            child.linearVelocity = Vector3.zero;
+            child.angularVelocity = Vector3.zero;
+            child.ResetArticulationBody();
         }
 
-        // Use the initial position from BaseLink and convert it properly
-        var NewPosition = ENU.ConvertToRUF(
-            new Vector3(
-                (float)initialPositionSAM[0],  
-                (float)initialPositionSAM[1],
-                (float)initialPositionSAM[2]+3f//keeping the position same as the initial position of the drone 
-            ));
+        foreach (Rigidbody rb in articulationBody.GetComponentsInChildren<Rigidbody>())
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 
-
-        Vector3 spawnPosition = NewPosition; // Adjust spawn position
-        Quaternion spawnRotation = Quaternion.identity;
-        Debug.Log("TRYING TO BRING BACK THE DRONE");
-
-        currentQuadrotor = Instantiate(quadrotorPrefab, spawnPosition, spawnRotation);
-        droneController = currentQuadrotor.GetComponent<DroneController.DroneController>(); // Reassign controller
+        articulationBody.immovable = false;
     }
 }

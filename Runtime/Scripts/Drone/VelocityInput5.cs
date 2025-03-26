@@ -96,7 +96,7 @@ public class VelocityInput5 : MonoBehaviour
                         if(Target.TryGetComponent(out ArticulationBody targetAb))
                         {
                             if(!targetAb.isRoot) return;
-                            targetAb.immovable = false;
+                            // targetAb.immovable = false;
                         }
                         immovableStage = 2;
                         break; 
