@@ -137,7 +137,7 @@ namespace DroneController
 
         [Header("Velocity control params")]
         public Vector3 TargetVelocity = Vector3.zero;
-        Vector3 TargetAccel = Vector3.zero;
+        public Vector3 TargetAccel = Vector3.zero;
 
         // Initialization function
         void Start()
