@@ -41,8 +41,8 @@ public class VelocityInput5 : MonoBehaviour
     public double speed = 1.0; // Speed of movement
     int immovableStage = 2; // to make the AB immovable, 0=preparing, 1=immovable, 2=default/nothing
 
-    private double ResetFrameNo =100;    
-    private double FrameCounter      =100; // to make a delay 
+    private double ResetFrameNo =10;    
+    private double FrameCounter      =10; // to make a delay 
 
 
     void Start()
@@ -117,34 +117,34 @@ public class VelocityInput5 : MonoBehaviour
                 FrameCounter --; 
 
 
-                // Use the initial position from BaseLink and convert it properly
-                var NewPosition = ENU.ConvertToRUF(
-                    new Vector3(
-                        (float)initialPositionSAM[0],  
-                        (float)initialPositionSAM[1],
-                        (float)initialPositionSAM[2]+5f//keeping the position same as the initial position of the drone 
-                    ));
-                // Use a default orientation (identity quaternion)
-                var NewOrientation = Quaternion.identity;
-                foreach (var ab in ABparts)
-                {
-                    ab.linearVelocity = Vector3.zero;
-                    ab.angularVelocity = Vector3.zero;
-                    ab.ResetArticulationBody();
-                }
+                // // Use the initial position from BaseLink and convert it properly
+                // var NewPosition = ENU.ConvertToRUF(
+                //     new Vector3(
+                //         (float)initialPositionSAM[0],  
+                //         (float)initialPositionSAM[1],
+                //         (float)initialPositionSAM[2]+5f//keeping the position same as the initial position of the drone 
+                //     ));
+                // // Use a default orientation (identity quaternion)
+                // var NewOrientation = Quaternion.identity;
+                // foreach (var ab in ABparts)
+                // {
+                //     ab.linearVelocity = Vector3.zero;
+                //     ab.angularVelocity = Vector3.zero;
+                //     ab.ResetArticulationBody();
+                // }
 
 
-                for (int i = 0; i < RBparts.Length; i++)
-                {   
-                    // Reset position and rotation to initial values
-                    RBparts[i].transform.position = NewPosition; // initialPositionWinch[i];
-                    RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
+                // for (int i = 0; i < RBparts.Length; i++)
+                // {   
+                //     // Reset position and rotation to initial values
+                //     RBparts[i].transform.position = NewPosition; // initialPositionWinch[i];
+                //     RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
 
-                    // Reset velocity to stop movement
-                    RBparts[i].linearVelocity = Vector3.zero;
-                    RBparts[i].angularVelocity = Vector3.zero;
-                } 
-                return;
+                //     // Reset velocity to stop movement
+                //     RBparts[i].linearVelocity = Vector3.zero;
+                //     RBparts[i].angularVelocity = Vector3.zero;
+                // } 
+                // return;
             }
 
 
@@ -160,6 +160,7 @@ public class VelocityInput5 : MonoBehaviour
                     if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
                     {
                         step=0; 
+                        FrameCounter=ResetFrameNo;
                     }
                     break;
 
