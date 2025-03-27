@@ -37,12 +37,11 @@ public class VelocityInput5 : MonoBehaviour
     private Vector<double> initialPositionSAM;
     private Vector<double> currentPosition;
     private int step = 0; // Step to track movement phase
-    public double sideLength = 4.0; // Length of each side of the square
+    public double sideLength = 6.0; // Length of each side of the square
     public double speed = 1.0; // Speed of movement
-    private int ResetFlag = 0; // to track reset agent phase, 0=Reset, 1=No need to reset
     int immovableStage = 2; // to make the AB immovable, 0=preparing, 1=immovable, 2=default/nothing
 
-    private double FrameCounterValue =100;    
+    private double ResetFrameNo =100;    
     private double FrameCounter      =100; // to make a delay 
 
 
@@ -70,18 +69,21 @@ public class VelocityInput5 : MonoBehaviour
         // Debug.Log($"Initial Position SAM (Center): x = {initialPositionSAM[0]}, y = {initialPositionSAM[1]}, z = {initialPositionSAM[2]}");
         // Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
 
-        double halfSide = sideLength / 2.0;
+        double halfSide = sideLength / 2.0;   // just to make a square trajectory 
 
         // For resetting the drone this if logic has to be inside the FixedUpdate() 
         // everything else will be inside 'else' 
         // Also do not forget to copy the ResetPosition(0) method 
 
-        Debug.Log("FrameCounter:" + FrameCounter + "Reset Flag:" + ResetFlag);
-
-        if (ResetFlag == 0 && FrameCounter>=0)
+        
+        
+        
+        // When I need to reset the Drone, The Frame Counter will be set to ResetFrameNo (for ex 100)
+        // Basically, for 100 FixedUpdate I will 
+        if (FrameCounter>=0)
         {
             
-            if(FrameCounter==FrameCounterValue)
+            if(FrameCounter==ResetFrameNo)
             {
                 FrameCounter--;
                 
@@ -110,7 +112,7 @@ public class VelocityInput5 : MonoBehaviour
 
 
 
-            else if(FrameCounter<FrameCounterValue)
+            else
             {
                 FrameCounter --; 
 
@@ -157,43 +159,41 @@ public class VelocityInput5 : MonoBehaviour
                     Debug.Log("GOING RIGHT");
                     if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
                     {
-                        step++; 
+                        step=0; 
                     }
                     break;
 
-                case 1: // Move forward
-                    droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
-                    Debug.Log("GOING UP");
-                    if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
-                    {
-                        step=0;
-                        ResetFlag=0; 
-                        FrameCounter=FrameCounterValue;
-                    }
-                    break;
+                // case 1: // Move forward
+                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
+                //     Debug.Log("GOING UP");
+                //     if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
+                //     {
+                //         step=0;
+                //         FrameCounter=ResetFrameNo;
+                //     }
+                //     break;
 
-                default:
-                    break;
+                // default:
+                //     break;
 
-                case 2: // Move left
-                    droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
-                    Debug.Log("GOING LEFT");
-                    if (currentPosition[0] <= initialPositionSAM[0] )
-                    {
-                        step=0;
-                        ResetFlag=0; 
-                        FrameCounter=FrameCounterValue;
-                    }
-                    break;
+                // case 2: // Move left
+                //     droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
+                //     Debug.Log("GOING LEFT");
+                //     if (currentPosition[0] <= initialPositionSAM[0] )
+                //     {
+                //         step=0;
+                //         FrameCounter=ResetFrameNo;
+                //     }
+                //     break;
 
-                case 3: // Move back
-                    droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
-                    Debug.Log("GOING DOWN");
-                    if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
-                    {
-                        step = 0; 
-                    }
-                    break;
+                // case 3: // Move back
+                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
+                //     Debug.Log("GOING DOWN");
+                //     if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
+                //     {
+                //         step = 0; 
+                //     }
+                //     break;
             }
         }
         
