@@ -1,13 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
 
 using DefaultNamespace; // ResetArticulationBody() extension
-
-
-// Directives for publishing messages
 using Unity.Robotics.Core; // Clock
 using Unity.Robotics.ROSTCPConnector;
 using StdMessages = RosMessageTypes.Std;
@@ -21,156 +19,95 @@ public class VelocityInput2 : MonoBehaviour
     [Tooltip("Baselink of drone")]
     public GameObject BaseLink;
     public GameObject BaseLinkSAM;
-    public Transform Target;
-    ArticulationBody[] ABparts;
 
-    int immovableStage = 2;
+    [Tooltip("Transform to Teleport(Drone Baselink)")]
+    public Transform Target; // Transform to Teleport
+
+    [Tooltip("Drone Actuator or Winch System (Rigid Body)")]
+    public Transform DroneActuator;
 
     public DroneController.DroneController droneController;
+
+    ArticulationBody[] ABparts;
+    Rigidbody[] RBparts;
 
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
     private Vector<double> currentPosition;
-    private int ResetFlag = 0; // ResetFlag to track reset agent phase
-    private int step = 0; // Step to track movement phase
-    public double sideLength = 6.0; // Length of each side of the square
-    public double speed = 1.0; // Speed of movement
+    public double PathLenght = 6.0;
+    public double speed = 1.0;
+
+    private int ResetInProgress = 0; 
+    private int ResetFlag = 0;
 
     void Start()
     {
         if (droneController != null)
         {
-            // Convert the initial position to ENU and store it
             initialPosition = BaseLink.transform.position.To<ENU>().ToDense();
             initialPositionSAM = BaseLinkSAM.transform.position.To<ENU>().ToDense();
 
             ABparts = Target.gameObject.GetComponentsInChildren<ArticulationBody>();
+            RBparts = DroneActuator.gameObject.GetComponentsInChildren<Rigidbody>();
         }
-
-        //ResetFlag = 0; 
     }
 
-    void Update()
+    void FixedUpdate()
     {
         if (droneController == null) return;
 
-        // Track current position and convert it to ENU
         currentPosition = droneController.BaseLink.transform.position.To<ENU>().ToDense();
-
-        //Debug.Log($"Initial Position SAM (Center): x = {initialPositionSAM[0]}, y = {initialPositionSAM[1]}, z = {initialPositionSAM[2]}");
         Debug.Log($"Current Position: x = {currentPosition[0]}, y = {currentPosition[1]}, z = {currentPosition[2]}");
+        Debug.Log("Reset Flag: " + ResetFlag);
 
-        double halfSide = sideLength / 2.0;
-
-        if (ResetFlag == 0)
+        if (ResetInProgress == 1)
         {
-            Debug.Log($"If Loop WHEN ****Reset Flag = {ResetFlag}");
-            ResetPosition();
-
-            switch(immovableStage)
-            {
-                case 0:
-                    immovableStage = 1;
-                    break;
-                case 1:
-                    Debug.Log("ENTERED SWITCH CASE 1");
-                    // if(Target.TryGetComponent(out ArticulationBody targetAb))
-                    // {
-                    //     if(!targetAb.isRoot) return;
-                    //     targetAb.immovable = false;
-                    // }
-                    immovableStage = 2;
-                    ResetFlag++;
-                    break;
-                default:
-                    break;
-            }
-
+            if (ResetFlag == 1) ResetPosition();
         }
-
         else
-        {   
-            Debug.Log($"ELSE Loop WHEN ****Reset Flag = {ResetFlag}");
-            switch (step)
+        {
+            if (currentPosition[0] < initialPositionSAM[0] + PathLenght)
             {
-                case 0: // Move right
-                    droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
-                    Debug.Log("GOING RIGHT");
-                    if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
-                    {
-                        //step++; 
-                        ResetFlag=0;
-                    }
-                    break;
-
-                // case 1: // Move forward
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
-                //     Debug.Log("go left");
-                //     if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
-                //     {
-                //         step++; 
-                //         ResetFlag++;
-                //         Debug.Log("0,0,1");
-                //     }
-                //     break;
-
-                // case 2: // Move left
-                //     droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
-                //     if (currentPosition[0] <= initialPositionSAM[0] - halfSide)
-                //     {
-                //         step=0; 
-                //         ResetFlag=0;
-                //         Debug.Log("-1,0,0");
-                //     }
-                //     break;
-
-                // default: 
-                //     break;
-
-                // case 3: // Move back
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
-                //     if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
-                //     {
-                //         step = 0; 
-                //         Debug.Log("0,0,-1");
-                //     }
-                //     break;
-            }
-        }
-
-        
-    }
-
-    void ResetPosition()
-    {   
-
-        float halfSide = (float) (sideLength / 2.0);
-        // Use the initial position from BaseLink and convert it properly
-        var NewPosition = ENU.ConvertToRUF(
-            new Vector3(
-                (float)initialPositionSAM[0]-halfSide,  // Assuming initialPosition is a vector-like structure
-                (float)initialPositionSAM[1],
-                (float)initialPosition[2]+2f //keeping the height same as the initial position of the drone 
-            ));
-         // Use a default orientation (identity quaternion)
-        var NewOrientation = Quaternion.identity;
-
-
-        if (Target.TryGetComponent(out ArticulationBody targetAb))
-            {
-                if (!targetAb.isRoot) return;
-                //targetAb.immovable = true;
-                immovableStage = 0;
-                targetAb.TeleportRoot(NewPosition, NewOrientation);
-                targetAb.linearVelocity = Vector3.zero;
-                targetAb.angularVelocity = Vector3.zero;
-                Debug.Log("NEW POSITION IS SET");
+                droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
+                Debug.Log("Velocity is set");
             }
             else
             {
-                Debug.Log("Target is not an Articulation Body");
+                droneController.SetTargetVelocity(new Vector3(0, 0, 0));
+                ResetFlag = 1;
+                ResetInProgress = 1;
+            }
+        }
+    }
+
+    void ResetPosition()
+    {
+        var NewPosition = ENU.ConvertToRUF(new Vector3(
+            (float)initialPosition[0],
+            (float)initialPosition[1],
+            (float)initialPosition[2]
+        ));
+
+        var NewOrientation = Quaternion.identity;
+
+        if (Target.TryGetComponent(out ArticulationBody targetAb))
+        {
+            if (!targetAb.isRoot) return;
+
+            targetAb.immovable = true;
+
+            Collider[] colliders = Target.GetComponentsInChildren<Collider>();
+            foreach (var col in colliders)
+            {
+                col.enabled = false;
             }
 
+
+            droneController.SetTargetVelocity(Vector3.zero);
+
+            targetAb.TeleportRoot(NewPosition, NewOrientation);
+            targetAb.linearVelocity = Vector3.zero;
+            targetAb.angularVelocity = Vector3.zero;
 
             foreach (var ab in ABparts)
             {
@@ -179,5 +116,40 @@ public class VelocityInput2 : MonoBehaviour
                 ab.ResetArticulationBody();
             }
 
+            foreach (var rb in RBparts)
+            {
+                rb.transform.position = NewPosition;
+                rb.rotation = Quaternion.Euler(0f, 0f, 0f);
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            StartCoroutine(ReEnablePhysics(targetAb));
+        }
+        else
+        {
+            Debug.Log("Target is not an Articulation Body");
+        }
+
+        ResetFlag = 0;
+        Debug.Log("RESET IS DONE");
+    }
+
+    IEnumerator ReEnablePhysics(ArticulationBody targetAb)
+    {
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+
+        Collider[] colliders = Target.GetComponentsInChildren<Collider>();
+        foreach (var col in colliders)
+        {
+            col.enabled = true;
+        }
+
+
+        targetAb.immovable = false;
+        ResetInProgress = 0;
+
+        Debug.Log("Physics re-enabled and drone is now movable");
     }
 }
