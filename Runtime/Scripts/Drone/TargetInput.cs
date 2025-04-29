@@ -15,7 +15,7 @@ using VehicleComponents.Actuators;
 using Unity.Robotics.ROSTCPConnector.ROSGeometry;
 using DefaultNamespace.LookUpTable;
 
-public class VelocityInput5 : MonoBehaviour
+public class TargetInput : MonoBehaviour
 {
     [Header("Basics")] 
     [Tooltip("Baselink of drone")]
@@ -27,11 +27,14 @@ public class VelocityInput5 : MonoBehaviour
 
     [Tooltip("Drone Actuator or Winch System (Rigid Body)")]
     public Transform DroneActuator;
+    public float maxStep = 1f;
 
     ArticulationBody[] ABparts;
     Rigidbody[] RBparts;
 
     public DroneController.DroneController droneController;
+
+    public UFO4 ufo;
 
     private Vector<double> initialPosition;
     private Vector<double> initialPositionSAM;
@@ -111,43 +114,6 @@ public class VelocityInput5 : MonoBehaviour
             }
 
 
-
-            else
-            {
-                FrameCounter --; 
-
-
-                // // Use the initial position from BaseLink and convert it properly
-                // var NewPosition = ENU.ConvertToRUF(
-                //     new Vector3(
-                //         (float)initialPositionSAM[0],  
-                //         (float)initialPositionSAM[1],
-                //         (float)initialPositionSAM[2]+5f//keeping the position same as the initial position of the drone 
-                //     ));
-                // // Use a default orientation (identity quaternion)
-                // var NewOrientation = Quaternion.identity;
-                // foreach (var ab in ABparts)
-                // {
-                //     ab.linearVelocity = Vector3.zero;
-                //     ab.angularVelocity = Vector3.zero;
-                //     ab.ResetArticulationBody();
-                // }
-
-
-                // for (int i = 0; i < RBparts.Length; i++)
-                // {   
-                //     // Reset position and rotation to initial values
-                //     RBparts[i].transform.position = NewPosition; // initialPositionWinch[i];
-                //     RBparts[i].rotation = Quaternion.Euler(0f, 0f, 0f);
-
-                //     // Reset velocity to stop movement
-                //     RBparts[i].linearVelocity = Vector3.zero;
-                //     RBparts[i].angularVelocity = Vector3.zero;
-                // } 
-                // return;
-            }
-
-
         }
 
         else
@@ -155,7 +121,15 @@ public class VelocityInput5 : MonoBehaviour
             switch (step)
             {
                 case 0: // Move right
-                    droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
+                    
+                    var position = BaseLink.transform.position;
+
+                    //droneController.SetTargetVelocity(new Vector3((float)speed, 0, 0));
+                    float posX = 0.1f;
+                    float posY = 0.1f;
+                    float posZ = 0.1f;
+                    Vector3 newPosition = new Vector3(position.x + (posX * maxStep), position.y + (posY * 0.03f), position.z+ (posZ * 0));
+                    ufo.SetPosition(newPosition);
                     Debug.Log("GOING RIGHT");
                     if (currentPosition[0] >= initialPositionSAM[0] + halfSide)
                     {
@@ -163,46 +137,10 @@ public class VelocityInput5 : MonoBehaviour
                         FrameCounter=ResetFrameNo;
                     }
                     break;
-
-                // case 1: // Move forward
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)speed));
-                //     Debug.Log("GOING UP");
-                //     if (currentPosition[1] >= initialPositionSAM[1] + halfSide)
-                //     {
-                //         step=0;
-                //         FrameCounter=ResetFrameNo;
-                //     }
-                //     break;
-
-                // default:
-                //     break;
-
-                // case 2: // Move left
-                //     droneController.SetTargetVelocity(new Vector3((float)-speed, 0, 0));
-                //     Debug.Log("GOING LEFT");
-                //     if (currentPosition[0] <= initialPositionSAM[0] )
-                //     {
-                //         step=0;
-                //         FrameCounter=ResetFrameNo;
-                //     }
-                //     break;
-
-                // case 3: // Move back
-                //     droneController.SetTargetVelocity(new Vector3(0, 0, (float)-speed));
-                //     Debug.Log("GOING DOWN");
-                //     if (currentPosition[1] <= initialPositionSAM[1] - halfSide)
-                //     {
-                //         step = 0; 
-                //     }
-                //     break;
             }
         }
         
     }
-
-
-
-
 
 
     void ResetPosition()
