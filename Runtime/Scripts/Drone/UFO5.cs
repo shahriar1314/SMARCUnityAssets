@@ -1,30 +1,39 @@
 using UnityEngine;
 using System;
-
 public class UFO5 : MonoBehaviour {
     [Header("Trajectory Parameters")]
-    public Transform target;            // ptd
-    public float totalTime = 35f;        // td
-    public float k = 0.6f;
+    public Transform target;            
+    public float heightOffset = 0.3f;      // ← how far above the water line
+    public float totalTime = 35f;        
+    public float k = 0.8f;
     public float kd_alpha = 0.4f;
     public float initialVelocity = 4.5f;
-    public float alpha0 = Mathf.PI / 4; // 45°
+    public float alpha0 = Mathf.PI / 4; 
 
-    private Vector3 p0;    // starting position
+    private Vector3 p0, raisedTarget;    // starting position, raised target
 
-    void Start() {
+    void Start()
+    {
         p0 = transform.position;
-        if (target == null) {
+        if (target == null)
+        {
             Debug.LogError("Assign a target Transform for perching.");
             enabled = false;
         }
+        
+        raisedTarget = target.position + Vector3.up * heightOffset;
+
     }
 
     void Update() {
+        // clamp time so we never overshoot
         float t = Mathf.Clamp(Time.time, 0f, totalTime);
 
-        // 1) compute tau0
-        float dist0 = Vector3.Distance(target.position, p0);
+        // 0) build your “raised” target position:
+        
+
+        // 1) compute tau0 based on raisedTarget
+        float dist0 = Vector3.Distance(raisedTarget, p0);
         float tau0 = dist0 / initialVelocity;
 
         // 2) distance gap d(t)
@@ -40,11 +49,11 @@ public class UFO5 : MonoBehaviour {
         float M1 = (sin0 - sin_t) / sin0;
         float M2 = sin_t / sin0;
 
-        // 5) displacement along local “up” for M3 (only z in your Python, adjust to Unity if needed)
+        // 5) displacement along local “up” (z-axis in your local frame)
         Vector3 M3 = new Vector3(0, 0, d_t * sin_t);
 
-        // 6) assemble p(t)
-        Vector3 p_t = M1 * target.position + M2 * p0 + M3;
+        // 6) assemble p(t) around the raised target
+        Vector3 p_t = M1 * raisedTarget + M2 * p0 + M3;
 
         transform.position = p_t;
     }
